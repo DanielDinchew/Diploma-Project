@@ -1,114 +1,33 @@
 import PlusIcon from "../icons/PlusIcon";
-import { useMemo, useState } from "react";
-import { Column, Id, Task } from "../types";
+import { useMemo, useState, useEffect } from "react";
+import { Column, Id, /*Task*/ } from "../types";
 import ColumnContainer from "./ColumnContainer";
 import {
   DndContext,
-  DragEndEvent,
-  DragOverEvent,
-  DragOverlay,
-  DragStartEvent,
+  //DragEndEvent,
+  //DragOverEvent,
+  //DragOverlay,
+  //DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { SortableContext, arrayMove } from "@dnd-kit/sortable";
-import { createPortal } from "react-dom";
-import TaskCard from "./TaskCard";
-
-const defaultCols: Column[] = [
-  {
-    id: "todo",
-    title: "Todo",
-  },
-  {
-    id: "doing",
-    title: "Work in progress",
-  },
-  {
-    id: "done",
-    title: "Done",
-  },
-];
-
-const defaultTasks: Task[] = [
-  {
-    id: "1",
-    columnId: "todo",
-    content: "List admin APIs for dashboard",
-  },
-  {
-    id: "2",
-    columnId: "todo",
-    content:
-      "Develop user registration functionality with OTP delivered on SMS after email confirmation and phone number confirmation",
-  },
-  {
-    id: "3",
-    columnId: "doing",
-    content: "Conduct security testing",
-  },
-  {
-    id: "4",
-    columnId: "doing",
-    content: "Analyze competitors",
-  },
-  {
-    id: "5",
-    columnId: "done",
-    content: "Create UI kit documentation",
-  },
-  {
-    id: "6",
-    columnId: "done",
-    content: "Dev meeting",
-  },
-  {
-    id: "7",
-    columnId: "done",
-    content: "Deliver dashboard prototype",
-  },
-  {
-    id: "8",
-    columnId: "todo",
-    content: "Optimize application performance",
-  },
-  {
-    id: "9",
-    columnId: "todo",
-    content: "Implement data validation",
-  },
-  {
-    id: "10",
-    columnId: "todo",
-    content: "Design database schema",
-  },
-  {
-    id: "11",
-    columnId: "todo",
-    content: "Integrate SSL web certificates into workflow",
-  },
-  {
-    id: "12",
-    columnId: "doing",
-    content: "Implement error logging and monitoring",
-  },
-  {
-    id: "13",
-    columnId: "doing",
-    content: "Design and implement responsive UI",
-  },
-];
+import { SortableContext, /*arrayMove*/ } from "@dnd-kit/sortable";
+//import { createPortal } from "react-dom";
+//import TaskCard from "./TaskCard";
+import { useNavigate } from 'react-router-dom';
 
 function KanbanBoard() {
-  const [columns, setColumns] = useState<Column[]>(defaultCols);
+  const navigate = useNavigate();
+
+  const [columns, setColumns] = useState<Column[]>([]);
+
   const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
 
-  const [tasks, setTasks] = useState<Task[]>(defaultTasks);
-
-  const [activeColumn, setActiveColumn] = useState<Column | null>(null);
-
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
+  
+  const [boardId, setBoardId] = useState<Id | null>(null);
+  //const [activeColumn, setActiveColumn] = useState<Column | null>(null);
+  //const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -118,6 +37,40 @@ function KanbanBoard() {
     })
   );
 
+  useEffect(() => {
+    const authToken = localStorage.getItem("authToken");
+    if (!authToken) {
+      navigate('/login');
+      return;
+    }
+  
+    fetch('https://localhost:7296/api/board/GetUserBoard', {
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+      },
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(boardData => {
+      console.log(boardData);
+      setBoardId(boardData.id);
+      const columnsData = boardData.columns ? (boardData.columns.$values || boardData.columns) : [];
+      setColumns(columnsData.map((column: { tasks: { $values: any; }; }) => ({
+        ...column,
+        tasks: column.tasks ? (column.tasks.$values || column.tasks) : []
+      })));
+    })
+    .catch(error => {
+      console.error("Failed to fetch: ", error);
+      navigate('/login');
+    });
+  }, [navigate]);
+
+  
   return (
     <div
       className="
@@ -133,9 +86,9 @@ function KanbanBoard() {
     >
       <DndContext
         sensors={sensors}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
-        onDragOver={onDragOver}
+        //onDragStart={onDragStart}
+        //onDragEnd={onDragEnd}
+        //onDragOver={onDragOver}
       >
         <div className="m-auto flex gap-4">
           <div className="flex gap-4">
@@ -144,12 +97,13 @@ function KanbanBoard() {
                 <ColumnContainer
                   key={col.id}
                   column={col}
+                  boardId={boardId}
                   deleteColumn={deleteColumn}
                   updateColumn={updateColumn}
                   createTask={createTask}
                   deleteTask={deleteTask}
                   updateTask={updateTask}
-                  tasks={tasks.filter((task) => task.columnId === col.id)}
+                  //tasks={tasks.filter((task) => task.columnId === col.id)}
                 />
               ))}
             </SortableContext>
@@ -178,87 +132,200 @@ function KanbanBoard() {
             Add Column
           </button>
         </div>
-
-        {createPortal(
-          <DragOverlay>
-            {activeColumn && (
-              <ColumnContainer
-                column={activeColumn}
-                deleteColumn={deleteColumn}
-                updateColumn={updateColumn}
-                createTask={createTask}
-                deleteTask={deleteTask}
-                updateTask={updateTask}
-                tasks={tasks.filter(
-                  (task) => task.columnId === activeColumn.id
-                )}
-              />
-            )}
-            {activeTask && (
-              <TaskCard
-                task={activeTask}
-                deleteTask={deleteTask}
-                updateTask={updateTask}
-              />
-            )}
-          </DragOverlay>,
-          document.body
-        )}
       </DndContext>
     </div>
   );
 
   function createTask(columnId: Id) {
-    const newTask: Task = {
-      id: generateId(),
-      columnId,
-      content: `Task ${tasks.length + 1}`,
-    };
-
-    setTasks([...tasks, newTask]);
+    const authToken = localStorage.getItem('authToken');
+    fetch('https://localhost:7296/api/board/AddTask', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        columnId: columnId,
+        // Here, include other task details as necessary
+      }),
+    })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then((newTask) => {
+      // Directly update columns state to include the new task in the correct column
+      setColumns((prevColumns) => {
+        // Ensure prevColumns is an array; if not, return it unchanged (or you could return an empty array or any other default value you see fit)
+        if (!Array.isArray(prevColumns)) return prevColumns; // or return [] or any other default value
+  
+        return prevColumns.map((column) => {
+          if (column.id === columnId) {
+            return {
+              ...column,
+              tasks : Array.isArray(column.tasks) ? [...column.tasks, newTask] : [newTask]
+            };
+          }
+          return column; // Return all other columns unchanged
+        });
+      });
+    })
+    .catch((error) => {
+      console.error('Error creating task:', error);
+    });
   }
+  
 
   function deleteTask(id: Id) {
-    const newTasks = tasks.filter((task) => task.id !== id);
-    setTasks(newTasks);
-  }
-
-  function updateTask(id: Id, content: string) {
-    const newTasks = tasks.map((task) => {
-      if (task.id !== id) return task;
-      return { ...task, content };
+    const authToken = localStorage.getItem('authToken');
+    fetch(`https://localhost:7296/api/board/DeleteTask/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+    })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      setColumns((prevColumns) => prevColumns.map((column) => {
+        return {
+          ...column,
+          tasks: column.tasks.filter((task) => task.id !== id)
+        };
+      }));
+    })
+    .catch((error) => {
+      console.error('Error deleting task:', error);
     });
+  }
+  
+  function updateTask(id: Id, description: string) {
+    const authToken = localStorage.getItem('authToken');
+    fetch(`https://localhost:7296/api/board/UpdateTask/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        description: description,
+      }),
+    })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      setColumns((prevColumns) => prevColumns.map((column) => {
+        return {
+          ...column,
+          tasks: column.tasks.map((task) => task.id === id ? { ...task, description } : task)
+        };
+      }));
+    })
+    .catch((error) => {
+      console.error('Error updating task:', error);
+    });
+  }
+  
 
-    setTasks(newTasks);
+  async function createNewColumn() {
+    const columnName = `Column ${columns.length + 1}`; // Generate a new column title
+
+    if (boardId === null) {
+      console.error('Board ID is null, cannot create new column.');
+      return;
   }
 
-  function createNewColumn() {
-    const columnToAdd: Column = {
-      id: generateId(),
-      title: `Column ${columns.length + 1}`,
+    // Prepare the column data to send in the request body
+    const columnData = {
+        name: columnName,
+        BoardId: boardId,
     };
 
-    setColumns([...columns, columnToAdd]);
-  }
+    try {
+        const response = await fetch('https://localhost:7296/api/board/AddColumn', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem("authToken")}`,
+            },
+            body: JSON.stringify(columnData),
+        });
 
-  function deleteColumn(id: Id) {
-    const filteredColumns = columns.filter((col) => col.id !== id);
-    setColumns(filteredColumns);
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
 
-    const newTasks = tasks.filter((t) => t.columnId !== id);
-    setTasks(newTasks);
-  }
+        const newColumn = await response.json(); // Assuming newColumn matches the expected structure
 
-  function updateColumn(id: Id, title: string) {
-    const newColumns = columns.map((col) => {
-      if (col.id !== id) return col;
-      return { ...col, title };
+        setColumns(prevColumns => [...prevColumns, newColumn]);
+
+    } catch (error) {
+        console.error('Error adding new column:', error);
+    }
+}
+
+
+
+
+async function deleteColumn(columnId: Id) {
+  try {
+    const response = await fetch(`https://localhost:7296/api/board/DeleteColumn/${columnId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem("authToken")}`,
+      },
     });
 
-    setColumns(newColumns);
-  }
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
 
-  function onDragStart(event: DragStartEvent) {
+    // Assuming deletion was successful, update the local state directly
+    setColumns((prevColumns) => {
+      return prevColumns.filter(column => column.id !== columnId);
+    });
+
+  } catch (error) {
+    console.error('Error deleting column:', error);
+  }
+}
+
+async function updateColumn(id: Id, newName: string) {
+  // Prepare column data for the update
+  const columnData = { name: newName };
+
+  try {
+    const response = await fetch(`https://localhost:7296/api/board/UpdateNameColumn?columnId=${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem("authToken")}`,
+      },
+      body: JSON.stringify(columnData),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update column');
+    }
+
+    // Assuming your backend returns the updated column, you can directly use it to update state
+    const updatedColumn = await response.json();
+
+    setColumns((prevColumns) => {
+      // Update the columns state by mapping over them and replacing the one that matches the ID
+      return prevColumns.map((column) => column.id === id ? updatedColumn : column);
+    });
+  } catch (error) {
+    console.error('Error updating column:', error);
+  }
+}
+
+  /*function onDragStart(event: DragStartEvent) {
     if (event.active.data.current?.type === "Column") {
       setActiveColumn(event.active.data.current.column);
       return;
@@ -338,12 +405,7 @@ function KanbanBoard() {
         return arrayMove(tasks, activeIndex, activeIndex);
       });
     }
-  }
-}
-
-function generateId() {
-  /* Generate a random number between 0 and 10000 */
-  return Math.floor(Math.random() * 10001);
+  }*/
 }
 
 export default KanbanBoard;

@@ -7,13 +7,32 @@ const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    console.log(`Name: ${name}, Email: ${email}, Password: ${password}`);
-    // Here, you would typically send the name, email, and password to the backend for account creation.
-    // For now, we'll simulate successful registration by navigating to the login page.
-    navigate('/login'); // Redirect to login page upon successful registration
+
+    try {
+      const response = await fetch('https://localhost:7296/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
+    
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
+      }
+      const data = await response.json();
+      console.log('Success:', data);
+
+      navigate('/login');
+    } catch (error) {
+      console.error('Error:', error);
+      // Handle network error, display error message to the user
+    }
+    
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">

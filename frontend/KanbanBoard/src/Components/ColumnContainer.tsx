@@ -1,36 +1,56 @@
-import { SortableContext, useSortable } from "@dnd-kit/sortable";
-import TrashIcon from "../icons/TrashIcon";
-import { Column, Id, Task } from "../types";
-import { CSS } from "@dnd-kit/utilities";
-import { useMemo, useState } from "react";
-import PlusIcon from "../icons/PlusIcon";
-import TaskCard from "./TaskCard";
+  import { useSortable } from "@dnd-kit/sortable";
+  import TrashIcon from "../icons/TrashIcon";
+  import { Column, Id } from "../types";
+  import { CSS } from "@dnd-kit/utilities";
+  import { useState } from "react";
+  import PlusIcon from "../icons/PlusIcon";
+  import TaskCard from "./TaskCard";
 
-interface Props {
-  column: Column;
-  deleteColumn: (id: Id) => void;
-  updateColumn: (id: Id, title: string) => void;
-
-  createTask: (columnId: Id) => void;
-  updateTask: (id: Id, content: string) => void;
-  deleteTask: (id: Id) => void;
-  tasks: Task[];
-}
+  interface Props {
+    column: Column;
+    deleteColumn: (id: Id) => Promise<void>;
+    updateColumn: (id: Id, title: string) => Promise<void>;
+    boardId: Id | null;
+    createTask: (columnId: Id) => void;
+    updateTask: (id: Id, description: string) => void;
+    deleteTask: (id: Id) => void;
+  }
 
 function ColumnContainer({
   column,
   deleteColumn,
   updateColumn,
   createTask,
-  tasks,
   deleteTask,
   updateTask,
 }: Props) {
-  const [editMode, setEditMode] = useState(false);
+  const [editableTitle, setEditableTitle] = useState(column.name);
+  const [isEditing, setIsEditing] = useState(false);
 
-  const tasksIds = useMemo(() => {
-    return tasks.map((task) => task.id);
-  }, [tasks]);
+  const handleTitleClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    // Allow newValue to be an empty string but prevent it from being null or undefined.
+    setEditableTitle(newValue);
+  };
+
+  const handleTitleBlur = async () => {
+    if (editableTitle.trim() === "") {
+      setEditableTitle(column.name); // Reset to original title if empty
+    } else {
+      await updateColumn(column.id, editableTitle.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      await handleTitleBlur();
+    }
+  };
 
   const {
     setNodeRef,
@@ -45,7 +65,6 @@ function ColumnContainer({
       type: "Column",
       column,
     },
-    disabled: editMode,
   });
 
   const style = {
@@ -92,9 +111,7 @@ function ColumnContainer({
       <div
         {...attributes}
         {...listeners}
-        onClick={() => {
-          setEditMode(true);
-        }}
+        onClick={handleTitleClick}
         className="
       bg-mainBackgroundColor
       text-md
@@ -126,20 +143,15 @@ function ColumnContainer({
           >
             0
           </div>
-          {!editMode && column.title}
-          {editMode && (
+          {!isEditing && <div>{column.name}</div>}
+          {isEditing && (
             <input
               className="bg-black focus:border-rose-500 border rounded outline-none px-2"
-              value={column.title}
-              onChange={(e) => updateColumn(column.id, e.target.value)}
+              value={editableTitle}
+              onChange={handleTitleChange}
+              onBlur={handleTitleBlur}
+              onKeyDown={handleKeyDown}
               autoFocus
-              onBlur={() => {
-                setEditMode(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key !== "Enter") return;
-                setEditMode(false);
-              }}
             />
           )}
         </div>
@@ -162,8 +174,8 @@ function ColumnContainer({
 
       {/* Column task container */}
       <div className="flex flex-grow flex-col gap-4 p-2 overflow-x-hidden overflow-y-auto">
-        <SortableContext items={tasksIds}>
-          {tasks.map((task) => (
+        <div>
+          {Array.isArray(column.tasks) && column.tasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}
@@ -171,7 +183,7 @@ function ColumnContainer({
               updateTask={updateTask}
             />
           ))}
-        </SortableContext>
+        </div>
       </div>
       {/* Column footer */}
       <button
