@@ -1,12 +1,9 @@
-﻿using System;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Kanban.Data;
 using Kanban.Models;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 
@@ -24,7 +21,7 @@ namespace Kanban.Services
             _context = context; // Initialize _context
         }
 
-        public string GenerateJwtToken(string userName, string userId)
+        public string GenerateAccessToken(string userName, string userId)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -67,7 +64,7 @@ namespace Kanban.Services
 
         public (string AccessToken, string RefreshToken) RenewTokens(string userName, string userId, User user)
         {
-            string accessToken = GenerateJwtToken(userName, userId);
+            string accessToken = GenerateAccessToken(userName, userId);
             string refreshToken = GenerateRefreshToken();
 
             // Pass the generated refresh token to ensure consistency

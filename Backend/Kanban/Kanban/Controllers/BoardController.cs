@@ -63,8 +63,8 @@ namespace Kanban.Controllers
                         Tasks = column.Tasks?.Select(task => new TaskDto
                         {
                             Id = task.Id,
-                            description = task.description
-                            // Map other properties as needed
+                            description = task.description,
+                            ColumnId = column.Id,
                         }).ToList() ?? new List<TaskDto>()
                     }).ToList() ?? new List<ColumnDto>()
                 };
@@ -80,11 +80,6 @@ namespace Kanban.Controllers
                 return StatusCode(500, "An internal server error has occurred.");
             }
         }
-
-
-
-
-
 
         private int GetCurrentUserId()
         {
@@ -157,20 +152,13 @@ namespace Kanban.Controllers
         {
             var task = await _context.Tasks.FindAsync(taskId);
             if (task == null) return NotFound();
-
-            task.description = taskDto.description;
-
-            await _context.SaveChangesAsync();
-            return Ok(task);
-        }
-
-        [HttpPut("MoveTask")]
-        public async Task<IActionResult> MoveTask(int taskId, [FromBody] TaskMoveDto moveDto)
-        {
-            var task = await _context.Tasks.FindAsync(taskId);
-            if (task == null) return NotFound();
-
-            task.ColumnId = moveDto.NewColumnId;
+             if (taskDto.description != null) {
+                task.description = taskDto.description;
+            }
+             if (taskDto.ColumnId != null) {
+                task.ColumnId = (int)taskDto.ColumnId;
+            }
+            Console.WriteLine(taskDto.ColumnId);
             await _context.SaveChangesAsync();
             return Ok(task);
         }
@@ -185,6 +173,5 @@ namespace Kanban.Controllers
             await _context.SaveChangesAsync();
             return NoContent(); // Or return Ok() if you prefer
         }
-
     }
 }

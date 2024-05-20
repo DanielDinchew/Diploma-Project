@@ -12,8 +12,8 @@ interface Props {
 
 function TaskCard({ task, deleteTask, updateTask }: Props) {
   const [mouseIsOver, setMouseIsOver] = useState(false);
-  const [editMode, setEditMode] = useState(false); // Changed to false to start in view mode
-  const [description, setContent] = useState(task.description); // Local state for content
+  const [editMode, setEditMode] = useState(false); 
+  const [description, setContent] = useState(task.description); 
 
   const {
     setNodeRef,
@@ -43,9 +43,9 @@ function TaskCard({ task, deleteTask, updateTask }: Props) {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault(); // Prevent the default action
-      updateTask(task.id, description); // Update the task
-      setEditMode(false); // Exit edit mode
+      e.preventDefault();
+      updateTask(task.id, description);
+      setEditMode(false); 
     } else if (e.key === "Enter" && e.shiftKey) {
       // Allow Shift+Enter to add a new line
       setContent(description + "\n");

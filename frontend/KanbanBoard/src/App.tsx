@@ -12,8 +12,8 @@ import KanbanBoard from "./Components/KanbanBoard";
 const App = () => {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" />} /> {/* Redirect to login by default */}
+      <Routes>  
+        <Route path="/" element={<Navigate to="/Login" />} /> {/* Redirect to login by default */}
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/KanbanBoard" element={ <KanbanBoard /> } />
@@ -21,6 +21,5 @@ const App = () => {
     </Router>
   );
 };
-
 
 export default App;

@@ -2,9 +2,7 @@
 using Kanban.Data;
 using Kanban.Models;
 using System.Text.RegularExpressions;
-using System.Linq;
 using Kanban.Services;
-using System.ComponentModel;
 
 namespace Kanban.Controllers
 {
@@ -65,9 +63,8 @@ namespace Kanban.Controllers
             };
 
             _context.Users.Add(user);
-            await _context.SaveChangesAsync(); // Changed to async to match method signature
+            await _context.SaveChangesAsync();
 
-            // Return only the user information, removing references to board creation
             return Ok(new
             {
                 User = new { user.Id, user.Name, user.Email }

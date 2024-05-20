@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
-
-namespace Kanban.Models
+﻿namespace Kanban.Models
 {
         public class Board
         {
